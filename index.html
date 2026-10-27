@@ -1,0 +1,422 @@
+<title>QR Magik</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+/* Layout : établi à deux colonnes (formulaire | aperçu du code), planche imprimable dessous ; mode Lecteur plein écran quand l'URL porte #r= */
+:root{
+  --paper:#f5f7f6; --sheet:#ffffff; --ink:#14241f; --muted:#5b6b66; --line:#d6dfdb;
+  --canopy:#1f6b4f; --canopy-ink:#ffffff; --tag:#e6f0eb; --warn:#9a5b00; --warn-bg:#fdf3e2;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", Verdana, system-ui, sans-serif;
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0f1714; --sheet:#16211d; --ink:#e7efeb; --muted:#9db0a8; --line:#2b3a34;
+  --canopy:#5cc79a; --canopy-ink:#0b1a14; --tag:#1d2f28; --warn:#f0b35a; --warn-bg:#2c2214; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0f1714; --sheet:#16211d; --ink:#e7efeb; --muted:#9db0a8; --line:#2b3a34;
+  --canopy:#5cc79a; --canopy-ink:#0b1a14; --tag:#1d2f28; --warn:#f0b35a; --warn-bg:#2c2214; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px;display:grid;gap:28px}
+header.top{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(2rem,5vw,3rem);line-height:1;margin:0;letter-spacing:-.02em;text-wrap:balance}
+h1 span{color:var(--canopy)}
+.lede{margin:.4rem 0 0;color:var(--muted);max-width:58ch}
+h2{font-family:var(--display);font-weight:700;font-size:1.25rem;margin:0}
+.eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700}
+.bench{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:820px){.bench{grid-template-columns:1fr}}
+.panel{background:var(--sheet);border:1px solid var(--line);border-radius:var(--radius);padding:22px;display:grid;gap:18px;min-width:0}
+.types{display:flex;flex-wrap:wrap;gap:8px}
+.types button{font:inherit;font-size:.92rem;border:1px solid var(--line);background:transparent;color:var(--ink);padding:8px 14px;border-radius:999px;cursor:pointer}
+.types button[aria-pressed="true"]{background:var(--canopy);color:var(--canopy-ink);border-color:var(--canopy)}
+label{display:grid;gap:6px;font-weight:700;font-size:.92rem}
+label small{font-weight:400;color:var(--muted)}
+input,textarea,select{font:inherit;font-weight:400;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+textarea{min-height:140px;resize:vertical}
+input:focus,textarea:focus,select:focus,button:focus-visible{outline:2px solid var(--canopy);outline-offset:2px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+.count{font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums;justify-self:end}
+.count.over{color:var(--warn);font-weight:700}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+.btn{font:inherit;font-weight:700;border-radius:8px;padding:10px 16px;cursor:pointer;border:1px solid var(--canopy);background:var(--canopy);color:var(--canopy-ink)}
+.btn.ghost{background:transparent;color:var(--canopy)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.preview{display:grid;justify-items:center;gap:12px;text-align:center}
+.qrbox{background:#fff;padding:14px;border-radius:8px;border:1px solid var(--line);width:100%;max-width:300px}
+.qrbox img,.qrbox canvas{width:100%;height:auto;display:block;image-rendering:pixelated}
+.qrlabel{font-family:var(--display);font-weight:700;font-size:1.05rem;text-wrap:balance}
+.hint{font-size:.85rem;color:var(--muted)}
+.notice{background:var(--warn-bg);color:var(--ink);border-left:3px solid var(--warn);padding:10px 12px;border-radius:6px;font-size:.88rem}
+.notice b{color:var(--warn)}
+details.settings{border-top:1px solid var(--line);padding-top:14px}
+details.settings summary{cursor:pointer;font-weight:700}
+details.settings .inner{display:grid;gap:10px;margin-top:12px}
+.sheet-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}
+.planche{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+.card{border:1px dashed var(--line);border-radius:8px;padding:12px;display:grid;gap:8px;justify-items:center;text-align:center;background:var(--sheet)}
+.card .qrbox{padding:8px;max-width:150px}
+.card .t{font-weight:700;font-size:.9rem;line-height:1.25}
+.card .k{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--canopy);background:var(--tag);padding:2px 8px;border-radius:99px}
+.card .acts{display:flex;gap:6px}
+.card .acts button{font:inherit;font-size:.78rem;border:0;background:transparent;color:var(--muted);cursor:pointer;text-decoration:underline}
+.empty{color:var(--muted);font-size:.92rem;padding:18px;border:1px dashed var(--line);border-radius:8px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin:0;padding:0;list-style:none;counter-reset:s}
+.steps li{counter-increment:s;display:grid;gap:4px}
+.steps li::before{content:counter(s);font-family:var(--display);font-weight:800;font-size:1.6rem;color:var(--canopy);line-height:1}
+.steps p{margin:0;color:var(--muted);font-size:.92rem}
+
+/* ---------- Lecteur ---------- */
+#reader{position:fixed;inset:0;z-index:20;background:var(--paper);overflow:auto;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+#reader .rin{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px;display:grid;gap:20px}
+.rbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.rtitle{font-family:var(--display);font-weight:800;font-size:clamp(1.6rem,6vw,2.4rem);line-height:1.1;margin:0;text-wrap:balance}
+.rtext{font-size:var(--rsize,1.35rem);line-height:1.75;letter-spacing:.01em;word-spacing:.08em;white-space:pre-wrap;margin:0;max-width:60ch}
+.rtext .w.on{background:var(--canopy);color:var(--canopy-ink);border-radius:3px}
+.listen{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.big{font:inherit;font-weight:700;font-size:1.15rem;padding:14px 22px;border-radius:12px;border:0;background:var(--canopy);color:var(--canopy-ink);cursor:pointer;min-height:56px}
+.small{font:inherit;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--sheet);color:var(--ink);cursor:pointer;min-height:44px}
+.media img,.media video{max-width:100%;border-radius:8px;display:block}
+.media audio{width:100%}
+.media .frame{position:relative;aspect-ratio:16/9;max-width:100%}
+.media iframe{position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:8px}
+.media a.out{font-weight:700;color:var(--canopy);font-size:1.1rem}
+model-viewer{width:100%;height:min(62vh,520px);background:var(--sheet);border:1px solid var(--line);border-radius:12px;--poster-color:transparent}
+.arbtn{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);font:inherit;font-weight:700;font-size:1.1rem;padding:14px 22px;border-radius:999px;border:0;background:var(--canopy);color:var(--canopy-ink);cursor:pointer;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.arinfo{font-size:.9rem;color:var(--muted);margin:0}
+.err{background:var(--warn-bg);border-left:3px solid var(--warn);padding:14px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media print{
+  body{background:#fff;color:#000}
+  .noprint,header.top,.bench,.howto{display:none!important}
+  .wrap{padding:0;gap:0}
+  .planche{grid-template-columns:repeat(3,1fr);gap:8mm}
+  .card{border:1px dashed #999;break-inside:avoid;background:#fff}
+  .card .acts{display:none}
+}
+</style>
+
+<div class="wrap" id="app">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Réalité augmentée pour la classe</div>
+      <h1>QR <span>Magik</span></h1>
+      <p class="lede">Collez un code sur une fiche, un affichage ou un cahier. L’élève le scanne avec l’appareil photo de la tablette : le texte est lu à voix haute, l’image ou la vidéo s’affiche. Aucune application à installer, aucun compte.</p>
+    </div>
+  </header>
+
+  <section class="bench">
+    <form class="panel" id="form" autocomplete="off">
+      <div class="eyebrow">1 · Choisir l’augmentation</div>
+      <div class="types" role="group" aria-label="Type d’augmentation">
+        <button type="button" data-k="3d" aria-pressed="true">Objet 3D en réalité augmentée</button>
+        <button type="button" data-k="texte">Texte lu à voix haute</button>
+        <button type="button" data-k="image">Image</button>
+        <button type="button" data-k="audio">Son</button>
+        <button type="button" data-k="video">Vidéo</button>
+        <button type="button" data-k="lien">Lien web</button>
+      </div>
+
+      <label for="f-title">Titre affiché à l’élève
+        <input id="f-title" maxlength="80">
+      </label>
+
+      <label for="f-text" id="lbl-text">Texte <small>(consigne, mot de vocabulaire, petite histoire…)</small>
+        <textarea id="f-text"></textarea>
+      </label>
+      <div class="count" id="count"></div>
+
+      <label for="f-url" id="lbl-url" hidden>Adresse du média <small id="url-help"></small>
+        <input id="f-url" type="url" inputmode="url" placeholder="https://">
+      </label>
+
+      <div class="row">
+        <label for="f-lang">Langue de la voix
+          <select id="f-lang">
+            <option value="fr-FR">Français</option>
+            <option value="en-GB">Anglais</option>
+            <option value="es-ES">Espagnol</option>
+            <option value="pt-BR">Portugais (Brésil)</option>
+            <option value="nl-NL">Néerlandais (Suriname)</option>
+          </select>
+        </label>
+        <label for="f-rate">Débit de lecture
+          <select id="f-rate">
+            <option value="0.75">Lent</option>
+            <option value="0.9" selected>Posé</option>
+            <option value="1">Normal</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="btns">
+        <button class="btn" type="submit" id="add">Ajouter à la planche</button>
+        <button class="btn ghost" type="button" id="try">Tester comme un élève</button>
+      </div>
+
+      <details class="settings" id="settings">
+        <summary>Adresse de publication de l’outil</summary>
+        <div class="inner">
+          <p class="hint" style="margin:0">Les codes ouvrent cette page en mode lecteur. Indiquez l’adresse où vous avez mis en ligne les fichiers de QR Magik (GitHub Pages, ENT, Forge des communs numériques éducatifs…). Sur GitHub Pages, l’adresse est reconnue toute seule.</p>
+          <label for="f-base">Adresse
+            <input id="f-base" type="url" placeholder="https://votre-pseudo.github.io/qr-magik/">
+          </label>
+        </div>
+      </details>
+    </form>
+
+    <aside class="panel preview" aria-live="polite">
+      <div class="eyebrow">2 · Le code obtenu</div>
+      <div class="qrbox" id="qr"></div>
+      <div class="qrlabel" id="qr-label"></div>
+      <p class="hint" id="qr-hint">Appui long ou clic droit sur le code pour l’enregistrer.</p>
+      <div class="notice" id="base-warn" hidden><b>Adresse manquante.</b> Ce code s’ouvrira seulement après la mise en ligne de l’outil : renseignez l’adresse de publication sous le formulaire.</div>
+      <div class="btns noprint" id="dl-wrap" hidden><button class="btn ghost" type="button" id="dl">Télécharger en PNG</button></div>
+    </aside>
+  </section>
+
+  <section class="panel" id="sheet">
+    <div class="sheet-head noprint">
+      <div>
+        <div class="eyebrow">3 · Planche à imprimer</div>
+        <h2>Vos codes</h2>
+      </div>
+      <div class="btns">
+        <button class="btn ghost" type="button" id="print" hidden>Imprimer la planche</button>
+        <button class="btn ghost" type="button" id="clear">Vider la planche</button>
+      </div>
+    </div>
+    <div class="planche" id="planche"></div>
+  </section>
+
+  <section class="howto noprint">
+    <ol class="steps">
+      <li><b>Mettre l’outil en ligne une fois</b><p>Déposez ce fichier HTML sur un hébergement en https. Une seule fois pour toute l’année.</p></li>
+      <li><b>Créer les codes</b><p>Un texte court tient dans le code lui-même : rien n’est stocké sur un serveur. Images, sons et vidéos sont appelés par leur adresse.</p></li>
+      <li><b>Scanner en classe</b><p>Appareil photo de l’iPad, de l’iPhone ou de la tablette Android, puis « Voir en réalité augmentée » ou « Écouter ». Fonctionne aussi hors connexion pour le texte une fois la page chargée.</p></li>
+    </ol>
+  </section>
+</div>
+
+<div id="reader" hidden>
+  <div class="rin">
+    <div class="rbar">
+      <div class="eyebrow">QR Magik</div>
+      <div class="listen">
+        <button class="small" type="button" id="r-minus" aria-label="Réduire le texte">A−</button>
+        <button class="small" type="button" id="r-plus" aria-label="Agrandir le texte">A+</button>
+        <button class="small" type="button" id="r-close" hidden>Fermer l’aperçu</button>
+      </div>
+    </div>
+    <h1 class="rtitle" id="r-title"></h1>
+    <div class="listen" id="r-listen">
+      <button class="big" type="button" id="r-play">▶ Écouter</button>
+      <button class="small" type="button" id="r-slow">Plus lent</button>
+    </div>
+    <p class="rtext" id="r-text"></p>
+    <div class="media" id="r-media"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const inFrame=(()=>{try{return window.self!==window.top}catch(e){return true}})();
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- encodage du contenu dans l'URL ---------- */
+function b64u(bytes){let s="";bytes.forEach(b=>s+=String.fromCharCode(b));return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
+function unb64u(str){str=str.replace(/-/g,"+").replace(/_/g,"/");while(str.length%4)str+="=";const s=atob(str);return Uint8Array.from(s,c=>c.charCodeAt(0))}
+async function pipe(bytes,Stream,mode){const st=new Blob([bytes]).stream().pipeThrough(new Stream(mode));return new Uint8Array(await new Response(st).arrayBuffer())}
+async function encode(obj){
+  const raw=new TextEncoder().encode(JSON.stringify(obj));
+  if(window.CompressionStream){try{const z=await pipe(raw,CompressionStream,"deflate-raw");if(z.length<raw.length)return "z"+b64u(z)}catch(e){}}
+  return "b"+b64u(raw);
+}
+async function decode(p){
+  const kind=p[0],bytes=unb64u(p.slice(1));
+  let raw=bytes;
+  if(kind==="z"){
+    if(!window.DecompressionStream)throw new Error("OLD");
+    raw=await pipe(bytes,DecompressionStream,"deflate-raw");
+  }
+  return JSON.parse(new TextDecoder().decode(raw));
+}
+
+/* ---------- adresse de base ---------- */
+function autoBase(){
+  if(!/^https?:$/.test(location.protocol))return "";
+  if(/claude\.ai|claudeusercontent|anthropic/.test(location.host))return "";
+  return location.origin+location.pathname;
+}
+function base(){return ($("#f-base").value.trim())||autoBase()}
+
+/* ---------- lecteur ---------- */
+let current=null,rate=0.9,size=1.35,utter=null;
+const I18N={
+ fr:{play:"▶ Écouter",stop:"■ Arrêter",slow:"Plus lent",ar:"📱 Voir en réalité augmentée",loading:"Chargement de l’objet 3D…",arHelp:"Faites tourner l’objet avec le doigt. Touchez « Voir en réalité augmentée », visez le sol ou une table : l’objet se pose dans la pièce.",noAr:"Faites tourner l’objet avec le doigt ou la souris. La réalité augmentée s’active sur smartphone ou tablette compatible.",err3d:"L’objet 3D n’a pas pu être chargé. Demandez à l’enseignant de vérifier le code.",errMod:"Impossible de charger le module 3D. Vérifiez la connexion internet.",openVideo:"▶ Ouvrir la vidéo",openLink:"Ouvrir le lien →",noVoice:"Lecture vocale indisponible",bad:"Code illisible",badMsg:"Ce code est abîmé ou incomplet. Demandez à l’enseignant de le réimprimer.",old:"Ce navigateur est trop ancien pour lire ce code. Mettez à jour l’appareil.",smaller:"Réduire le texte",bigger:"Agrandir le texte"},
+ en:{play:"▶ Listen",stop:"■ Stop",slow:"Slower",ar:"📱 View in augmented reality",loading:"Loading the 3D object…",arHelp:"Turn the object with your finger. Tap “View in augmented reality”, then point at the floor or a table: the object appears in the room.",noAr:"Turn the object with your finger or mouse. Augmented reality works on a compatible phone or tablet.",err3d:"The 3D object could not be loaded. Ask your teacher to check the code.",errMod:"The 3D module could not load. Check the internet connection.",openVideo:"▶ Open the video",openLink:"Open the link →",noVoice:"Read-aloud not available",bad:"Unreadable code",badMsg:"This code is damaged or incomplete. Ask your teacher to print it again.",old:"This browser is too old to read this code. Please update the device.",smaller:"Smaller text",bigger:"Larger text"},
+ es:{play:"▶ Escuchar",stop:"■ Parar",slow:"Más lento",ar:"📱 Ver en realidad aumentada",loading:"Cargando el objeto 3D…",arHelp:"Gira el objeto con el dedo. Toca «Ver en realidad aumentada» y apunta al suelo o a una mesa: el objeto aparece en la sala.",noAr:"Gira el objeto con el dedo o el ratón. La realidad aumentada funciona en un teléfono o tableta compatible.",err3d:"No se pudo cargar el objeto 3D. Pide a tu profesor que revise el código.",errMod:"No se pudo cargar el módulo 3D. Revisa la conexión a internet.",openVideo:"▶ Abrir el vídeo",openLink:"Abrir el enlace →",noVoice:"Lectura en voz alta no disponible",bad:"Código ilegible",badMsg:"Este código está dañado o incompleto. Pide a tu profesor que lo vuelva a imprimir.",old:"Este navegador es demasiado antiguo para leer este código. Actualiza el dispositivo.",smaller:"Texto más pequeño",bigger:"Texto más grande"},
+ pt:{play:"▶ Ouvir",stop:"■ Parar",slow:"Mais devagar",ar:"📱 Ver em realidade aumentada",loading:"Carregando o objeto 3D…",arHelp:"Gire o objeto com o dedo. Toque em “Ver em realidade aumentada” e aponte para o chão ou uma mesa: o objeto aparece na sala.",noAr:"Gire o objeto com o dedo ou o mouse. A realidade aumentada funciona em celular ou tablet compatível.",err3d:"Não foi possível carregar o objeto 3D. Peça ao professor para verificar o código.",errMod:"Não foi possível carregar o módulo 3D. Verifique a conexão com a internet.",openVideo:"▶ Abrir o vídeo",openLink:"Abrir o link →",noVoice:"Leitura em voz alta indisponível",bad:"Código ilegível",badMsg:"Este código está danificado ou incompleto. Peça ao professor para imprimi-lo novamente.",old:"Este navegador é antigo demais para ler este código. Atualize o aparelho.",smaller:"Diminuir o texto",bigger:"Aumentar o texto"},
+ nl:{play:"▶ Luisteren",stop:"■ Stoppen",slow:"Langzamer",ar:"📱 Bekijk in augmented reality",loading:"Het 3D-object wordt geladen…",arHelp:"Draai het object met je vinger. Tik op „Bekijk in augmented reality” en richt op de vloer of een tafel: het object verschijnt in de ruimte.",noAr:"Draai het object met je vinger of muis. Augmented reality werkt op een geschikte telefoon of tablet.",err3d:"Het 3D-object kon niet worden geladen. Vraag je leerkracht de code te controleren.",errMod:"De 3D-module kon niet worden geladen. Controleer de internetverbinding.",openVideo:"▶ Video openen",openLink:"Link openen →",noVoice:"Voorlezen niet beschikbaar",bad:"Onleesbare code",badMsg:"Deze code is beschadigd of onvolledig. Vraag je leerkracht hem opnieuw af te drukken.",old:"Deze browser is te oud om deze code te lezen. Werk het apparaat bij.",smaller:"Kleinere tekst",bigger:"Grotere tekst"}};
+let L=I18N.fr;
+function setLang(code){L=I18N[(code||"fr").slice(0,2)]||I18N.fr;$("#r-play").textContent=L.play;$("#r-slow").textContent=L.slow;$("#r-minus").setAttribute("aria-label",L.smaller);$("#r-plus").setAttribute("aria-label",L.bigger)}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function safeUrl(u){try{const x=new URL(u,base()||location.href);return /^https?:$/.test(x.protocol)?x.href:""}catch(e){return ""}}
+function ytId(u){const m=u.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/);return m?m[1]:""}
+function renderReader(d,preview){
+  current=d;rate=parseFloat(d.r)||0.9;stop();setLang(d.l||"fr-FR");
+  document.documentElement.lang=(d.l||"fr-FR").slice(0,2);
+  $("#r-title").textContent=d.t||"";
+  const txt=$("#r-text");
+  txt.innerHTML=(d.x||"").split(/(\s+)/).map(w=>/\S/.test(w)?'<span class="w">'+esc(w)+'</span>':esc(w)).join("");
+  $("#r-listen").hidden=!d.x;
+  const m=$("#r-media"),u=safeUrl(d.m||"");m.innerHTML="";
+  if(u&&d.k==="3d"){show3d(m,u,d.t);}
+  else if(u){
+    if(d.k==="image")m.innerHTML='<img alt="'+esc(d.t||"Image")+'" src="'+esc(u)+'">';
+    else if(d.k==="audio")m.innerHTML='<audio controls preload="metadata" src="'+esc(u)+'"></audio>';
+    else if(d.k==="video"){
+      const id=ytId(u);
+      if(id&&!inFrame)m.innerHTML='<div class="frame"><iframe src="https://www.youtube-nocookie.com/embed/'+id+'" allow="fullscreen; picture-in-picture" allowfullscreen title="Vidéo"></iframe></div>';
+      else if(/\.(mp4|webm|mov)(\?|$)/i.test(u))m.innerHTML='<video controls playsinline src="'+esc(u)+'"></video>';
+      else m.innerHTML='<a class="out" href="'+esc(u)+'" target="_blank" rel="noopener">'+L.openVideo+'</a>';
+    }
+    else m.innerHTML='<a class="out" href="'+esc(u)+'" target="_blank" rel="noopener">'+L.openLink+'</a>';
+  }
+  $("#r-close").hidden=!preview;
+  $("#reader").hidden=false;$("#app").hidden=!!(!preview);
+  applySize();
+}
+function loadMV(){return window.customElements&&customElements.get("model-viewer")?Promise.resolve():new Promise((ok,ko)=>{const s=document.createElement("script");s.type="module";s.src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js";s.onload=()=>customElements.whenDefined("model-viewer").then(ok);s.onerror=ko;document.head.appendChild(s)})}
+function show3d(m,u,t){
+  m.innerHTML='<p class="arinfo">'+esc(L.loading)+'</p>';
+  loadMV().then(()=>{
+    m.innerHTML='';
+    const mv=document.createElement("model-viewer");
+    mv.setAttribute("src",u);mv.setAttribute("alt",t||"Objet 3D");
+    ["ar","camera-controls","auto-rotate","touch-action"].forEach(a=>mv.setAttribute(a,a==="touch-action"?"pan-y":""));
+    mv.setAttribute("ar-modes","webxr scene-viewer quick-look");mv.setAttribute("ar-scale","auto");mv.setAttribute("shadow-intensity","1");
+    const b=document.createElement("button");b.slot="ar-button";b.className="arbtn";b.type="button";b.textContent=L.ar;mv.appendChild(b);
+    const info=document.createElement("p");info.className="arinfo";
+    info.textContent=L.arHelp;
+    mv.addEventListener("load",()=>{if(!mv.canActivateAR)info.textContent=L.noAr;});
+    mv.addEventListener("error",()=>{m.innerHTML='<div class="err">'+esc(L.err3d)+'</div>'});
+    m.appendChild(mv);m.appendChild(info);
+  }).catch(()=>{m.innerHTML='<div class="err">'+esc(L.errMod)+'</div>'});
+}
+function applySize(){$("#r-text").style.setProperty("--rsize",size+"rem")}
+function voiceFor(lang){const vs=speechSynthesis.getVoices();return vs.find(v=>v.lang===lang)||vs.find(v=>v.lang.replace("_","-").startsWith(lang.slice(0,2)))}
+function stop(){try{speechSynthesis.cancel()}catch(e){}document.querySelectorAll(".w.on").forEach(e=>e.classList.remove("on"));$("#r-play").textContent=L.play}
+function play(){
+  if(!("speechSynthesis" in window)){$("#r-play").textContent=L.noVoice;return}
+  if(speechSynthesis.speaking){stop();return}
+  const d=current,text=[d.t,d.x].filter(Boolean).join(". ");
+  utter=new SpeechSynthesisUtterance(text);
+  utter.lang=d.l||"fr-FR";utter.rate=rate;const v=voiceFor(utter.lang);if(v)utter.voice=v;
+  const words=[...document.querySelectorAll("#r-text .w")],offset=d.t?d.t.length+2:0;
+  const starts=[];let pos=offset;const xs=d.x||"";words.forEach(w=>{const i=xs.indexOf(w.textContent,pos-offset);starts.push(i+offset);pos=i+offset+w.textContent.length});
+  utter.onboundary=e=>{if(e.name&&e.name!=="word")return;words.forEach(w=>w.classList.remove("on"));let k=-1;for(let i=0;i<starts.length;i++){if(starts[i]<=e.charIndex)k=i;else break}if(k>=0)words[k].classList.add("on")};
+  utter.onend=utter.onerror=stop;
+  $("#r-play").textContent=L.stop;
+  speechSynthesis.speak(utter);
+}
+$("#r-play").onclick=play;
+$("#r-slow").onclick=()=>{rate=Math.max(0.5,rate-0.15);stop();play()};
+$("#r-plus").onclick=()=>{size=Math.min(2.6,size+0.15);applySize()};
+$("#r-minus").onclick=()=>{size=Math.max(1,size-0.15);applySize()};
+$("#r-close").onclick=()=>{stop();$("#reader").hidden=true;$("#app").hidden=false};
+if("speechSynthesis" in window)speechSynthesis.onvoiceschanged=()=>{};
+
+/* ---------- générateur ---------- */
+let kind="texte";
+const help={"3d":"fichier .glb en ligne, par exemple déposé à côté de l’outil : modeles/toucan.glb",image:"lien direct vers une image (.jpg, .png) hébergée en ligne",audio:"lien direct vers un fichier son (.mp3, .m4a), par exemple un enregistrement en créole",video:"lien YouTube, PeerTube ou fichier .mp4",lien:"page web à ouvrir"};
+function setKind(k){
+  kind=k;document.querySelectorAll(".types button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===k));
+  $("#lbl-url").hidden=k==="texte";$("#url-help").textContent=help[k]?"("+help[k]+")":"";
+  $("#lbl-text").firstChild.textContent=(k==="texte")?"Texte ":"Texte d’accompagnement (facultatif) ";
+  refresh();
+}
+document.querySelectorAll(".types button").forEach(b=>b.onclick=()=>setKind(b.dataset.k));
+function data(){return {t:$("#f-title").value.trim(),x:$("#f-text").value.trim(),k:kind,m:$("#f-url").value.trim(),l:$("#f-lang").value,r:$("#f-rate").value}}
+function clean(d){const o={};for(const k in d)if(d[k]&&!(k==="k"&&d[k]==="texte")&&!(k==="r"&&d[k]==="0.9")&&!(k==="l"&&d[k]==="fr-FR"))o[k]=d[k];return o}
+async function linkFor(d){const p=await encode(clean(d));return (base()||"https://adresse-a-renseigner.invalid/")+"#r="+p}
+function qrImg(text,cell){
+  let ec="M",q;
+  for(const lvl of ["M","L"]){try{q=qrcode(0,lvl);q.addData(text,"Byte");q.make();ec=lvl;break}catch(e){q=null}}
+  if(!q)return null;
+  const n=q.getModuleCount(),c=document.createElement("canvas"),s=cell||8,m=4;
+  c.width=c.height=(n+m*2)*s;const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.fillStyle="#000";
+  for(let r=0;r<n;r++)for(let k=0;k<n;k++)if(q.isDark(r,k))g.fillRect((k+m)*s,(r+m)*s,s,s);
+  const img=new Image();img.src=c.toDataURL("image/png");img.alt="Code QR";img.dataset.modules=n;return img;
+}
+let lastLink="",timer;
+async function refresh(){
+  clearTimeout(timer);
+  timer=setTimeout(async()=>{
+    const d=data(),link=await linkFor(d);lastLink=link;
+    const box=$("#qr");box.innerHTML="";
+    const img=qrImg(link,8);
+    const n=link.length;$("#count").textContent=n+" caractères dans le code";
+    const over=!img||n>1400;$("#count").classList.toggle("over",over);
+    if(img)box.appendChild(img);else box.innerHTML='<p class="hint">Texte trop long pour un seul code. Raccourcissez-le ou découpez-le en plusieurs codes.</p>';
+    if(img&&n>1100)$("#count").textContent+=" · code dense : imprimez-le en grand (6 cm minimum)";
+    $("#qr-label").textContent=d.t||(d.x?d.x.slice(0,50)+(d.x.length>50?"…":""):"");
+    $("#base-warn").hidden=!!base();
+    $("#add").disabled=!img||(!d.x&&!d.m&&!d.t);
+    $("#dl-wrap").hidden=inFrame||!img;
+  },150);
+}
+["#f-title","#f-text","#f-url","#f-lang","#f-rate"].forEach(s=>$(s).addEventListener("input",refresh));
+$("#f-base").addEventListener("input",()=>{store.set("pa-base",$("#f-base").value.trim());refresh();renderSheet()});
+$("#try").onclick=()=>renderReader(data(),true);
+$("#dl").onclick=()=>{const img=$("#qr img");if(!img)return;const a=document.createElement("a");a.href=img.src;a.download=(($("#f-title").value||"code").replace(/[^\w\- ]+/g,"").trim()||"code")+".png";a.click()};
+
+/* ---------- planche ---------- */
+let items=store.get("pa-items",null);
+if(!items)items=[
+ {ex:1,t:"Le Maroni (exemple)",x:"Le Maroni est le grand fleuve de l’ouest de la Guyane. Il marque la frontière avec le Suriname. On s’y déplace en pirogue.",k:"texte",l:"fr-FR",r:"0.9"},
+ {ex:1,t:"Consigne (exemple)",x:"Entoure en vert les animaux qui vivent dans la forêt amazonienne. Puis écris leur nom sous chaque image.",k:"texte",l:"fr-FR",r:"0.75"}
+];
+async function renderSheet(){
+  const el=$("#planche");el.innerHTML="";
+  if(!items.length){el.innerHTML='<p class="empty">La planche est vide. Remplissez le formulaire puis « Ajouter à la planche ».</p>';return}
+  for(let i=0;i<items.length;i++){
+    const d=items[i],img=qrImg(await linkFor(d),5),card=document.createElement("div");card.className="card";
+    const kl={"3d":"Objet 3D",texte:"Écouter",image:"Image",audio:"Son",video:"Vidéo",lien:"Lien"}[d.k]||"Écouter";
+    card.innerHTML='<div class="qrbox"></div><div class="t"></div><span class="k"></span><div class="acts noprint"><button type="button" data-a="see">Tester</button><button type="button" data-a="edit">Modifier</button><button type="button" data-a="del">Retirer</button></div>';
+    if(img)card.querySelector(".qrbox").appendChild(img);
+    card.querySelector(".t").textContent=d.t||(d.x||"").slice(0,40);card.querySelector(".k").textContent=kl;
+    card.querySelector('[data-a="see"]').onclick=()=>renderReader(d,true);
+    card.querySelector('[data-a="edit"]').onclick=()=>{fill(d);items.splice(i,1);save();window.scrollTo({top:0,behavior:"smooth"})};
+    card.querySelector('[data-a="del"]').onclick=()=>{items.splice(i,1);save()};
+    el.appendChild(card);
+  }
+}
+function save(){store.set("pa-items",items);renderSheet()}
+function fill(d){$("#f-title").value=d.t||"";$("#f-text").value=d.x||"";$("#f-url").value=d.m||"";$("#f-lang").value=d.l||"fr-FR";$("#f-rate").value=d.r||"0.9";setKind(d.k||"texte")}
+$("#form").addEventListener("submit",e=>{e.preventDefault();const d=data();items=items.filter(x=>!x.ex);items.push(d);save();$("#f-title").value="";$("#f-text").value="";$("#f-url").value="";refresh();$("#add").textContent="Ajouté ✓";setTimeout(()=>$("#add").textContent="Ajouter à la planche",1400)});
+$("#clear").onclick=()=>{items=[];save()};
+$("#print").hidden=inFrame;$("#print").onclick=()=>window.print();
+
+/* ---------- démarrage ---------- */
+async function boot(){
+  const h=location.hash;
+  if(h.startsWith("#r=")){
+    $("#app").hidden=true;
+    try{renderReader(await decode(h.slice(3)),false)}
+    catch(e){$("#reader").hidden=false;$("#r-listen").hidden=true;setLang((navigator.language||"fr").slice(0,2));$("#r-title").textContent=L.bad;$("#r-media").innerHTML='<div class="err">'+esc(e.message==="OLD"?L.old:L.badMsg)+'</div>'}
+    return;
+  }
+  $("#f-base").value=store.get("pa-base","");
+  if(!base())$("#settings").open=true;
+  fill({t:"L’astronaute",x:"",k:"3d",m:"https://modelviewer.dev/shared-assets/models/Astronaut.glb",l:"fr-FR",r:"0.9"});
+  renderSheet();
+}
+window.addEventListener("hashchange",()=>location.reload());
+boot();
+})();
+</script>
