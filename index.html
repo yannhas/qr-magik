@@ -86,6 +86,13 @@ details.settings .inner{display:grid;gap:10px;margin-top:12px}
 .media a.out{font-weight:700;color:var(--canopy);font-size:1.1rem}
 model-viewer{width:100%;height:min(62vh,520px);background:var(--sheet);border:1px solid var(--line);border-radius:12px;--poster-color:transparent}
 .arbtn{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);font:inherit;font-weight:700;font-size:1.1rem;padding:14px 22px;border-radius:999px;border:0;background:var(--canopy);color:var(--canopy-ink);cursor:pointer;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.camstart{font:inherit;font-weight:800;font-size:1.2rem;width:100%;padding:18px 22px;border-radius:14px;border:0;background:var(--canopy);color:var(--canopy-ink);cursor:pointer;min-height:64px}
+.roombtn{position:absolute;right:12px;bottom:12px;font:inherit;font-weight:700;font-size:.9rem;padding:10px 14px;border-radius:999px;border:1px solid var(--line);background:var(--sheet);color:var(--ink);cursor:pointer}
+#arcam{position:fixed;inset:0;z-index:40;background:#000}
+#arcam .camwrap{position:absolute;inset:0}
+#arcam video,#arcam canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.camclose{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));width:48px;height:48px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;font-size:1.3rem;cursor:pointer}
+.camhint{position:absolute;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;padding:12px 18px;border-radius:999px;font-weight:700;text-align:center;max-width:calc(100% - 32px)}
 .arinfo{font-size:.9rem;color:var(--muted);margin:0}
 .err{background:var(--warn-bg);border-left:3px solid var(--warn);padding:14px;border-radius:6px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -220,6 +227,13 @@ model-viewer{width:100%;height:min(62vh,520px);background:var(--sheet);border:1p
     <div class="media" id="r-media"></div>
   </div>
 </div>
+<div id="arcam" hidden>
+  <div class="camwrap"><video id="cam-video" playsinline muted autoplay></video><canvas id="cam-gl"></canvas></div>
+  <button type="button" class="camclose" id="cam-close">✕</button>
+  <div class="camhint" id="cam-hint"></div>
+  <div hidden><div>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -257,13 +271,13 @@ function base(){return ($("#f-base").value.trim())||autoBase()}
 /* ---------- lecteur ---------- */
 let current=null,rate=0.9,size=1.35,utter=null;
 const I18N={
- fr:{play:"▶ Écouter",stop:"■ Arrêter",slow:"Plus lent",ar:"📱 Voir en réalité augmentée",loading:"Chargement de l’objet 3D…",arHelp:"Faites tourner l’objet avec le doigt. Touchez « Voir en réalité augmentée », visez le sol ou une table : l’objet se pose dans la pièce.",noAr:"Faites tourner l’objet avec le doigt ou la souris. La réalité augmentée s’active sur smartphone ou tablette compatible.",err3d:"L’objet 3D n’a pas pu être chargé. Demandez à l’enseignant de vérifier le code.",errMod:"Impossible de charger le module 3D. Vérifiez la connexion internet.",openVideo:"▶ Ouvrir la vidéo",openLink:"Ouvrir le lien →",noVoice:"Lecture vocale indisponible",bad:"Code illisible",badMsg:"Ce code est abîmé ou incomplet. Demandez à l’enseignant de le réimprimer.",old:"Ce navigateur est trop ancien pour lire ce code. Mettez à jour l’appareil.",smaller:"Réduire le texte",bigger:"Agrandir le texte"},
- en:{play:"▶ Listen",stop:"■ Stop",slow:"Slower",ar:"📱 View in augmented reality",loading:"Loading the 3D object…",arHelp:"Turn the object with your finger. Tap “View in augmented reality”, then point at the floor or a table: the object appears in the room.",noAr:"Turn the object with your finger or mouse. Augmented reality works on a compatible phone or tablet.",err3d:"The 3D object could not be loaded. Ask your teacher to check the code.",errMod:"The 3D module could not load. Check the internet connection.",openVideo:"▶ Open the video",openLink:"Open the link →",noVoice:"Read-aloud not available",bad:"Unreadable code",badMsg:"This code is damaged or incomplete. Ask your teacher to print it again.",old:"This browser is too old to read this code. Please update the device.",smaller:"Smaller text",bigger:"Larger text"},
- es:{play:"▶ Escuchar",stop:"■ Parar",slow:"Más lento",ar:"📱 Ver en realidad aumentada",loading:"Cargando el objeto 3D…",arHelp:"Gira el objeto con el dedo. Toca «Ver en realidad aumentada» y apunta al suelo o a una mesa: el objeto aparece en la sala.",noAr:"Gira el objeto con el dedo o el ratón. La realidad aumentada funciona en un teléfono o tableta compatible.",err3d:"No se pudo cargar el objeto 3D. Pide a tu profesor que revise el código.",errMod:"No se pudo cargar el módulo 3D. Revisa la conexión a internet.",openVideo:"▶ Abrir el vídeo",openLink:"Abrir el enlace →",noVoice:"Lectura en voz alta no disponible",bad:"Código ilegible",badMsg:"Este código está dañado o incompleto. Pide a tu profesor que lo vuelva a imprimir.",old:"Este navegador es demasiado antiguo para leer este código. Actualiza el dispositivo.",smaller:"Texto más pequeño",bigger:"Texto más grande"},
- pt:{play:"▶ Ouvir",stop:"■ Parar",slow:"Mais devagar",ar:"📱 Ver em realidade aumentada",loading:"Carregando o objeto 3D…",arHelp:"Gire o objeto com o dedo. Toque em “Ver em realidade aumentada” e aponte para o chão ou uma mesa: o objeto aparece na sala.",noAr:"Gire o objeto com o dedo ou o mouse. A realidade aumentada funciona em celular ou tablet compatível.",err3d:"Não foi possível carregar o objeto 3D. Peça ao professor para verificar o código.",errMod:"Não foi possível carregar o módulo 3D. Verifique a conexão com a internet.",openVideo:"▶ Abrir o vídeo",openLink:"Abrir o link →",noVoice:"Leitura em voz alta indisponível",bad:"Código ilegível",badMsg:"Este código está danificado ou incompleto. Peça ao professor para imprimi-lo novamente.",old:"Este navegador é antigo demais para ler este código. Atualize o aparelho.",smaller:"Diminuir o texto",bigger:"Aumentar o texto"},
- nl:{play:"▶ Luisteren",stop:"■ Stoppen",slow:"Langzamer",ar:"📱 Bekijk in augmented reality",loading:"Het 3D-object wordt geladen…",arHelp:"Draai het object met je vinger. Tik op „Bekijk in augmented reality” en richt op de vloer of een tafel: het object verschijnt in de ruimte.",noAr:"Draai het object met je vinger of muis. Augmented reality werkt op een geschikte telefoon of tablet.",err3d:"Het 3D-object kon niet worden geladen. Vraag je leerkracht de code te controleren.",errMod:"De 3D-module kon niet worden geladen. Controleer de internetverbinding.",openVideo:"▶ Video openen",openLink:"Link openen →",noVoice:"Voorlezen niet beschikbaar",bad:"Onleesbare code",badMsg:"Deze code is beschadigd of onvolledig. Vraag je leerkracht hem opnieuw af te drukken.",old:"Deze browser is te oud om deze code te lezen. Werk het apparaat bij.",smaller:"Kleinere tekst",bigger:"Grotere tekst"}};
+ fr:{play:"▶ Écouter",stop:"■ Arrêter",slow:"Plus lent",ar:"📱 Voir en réalité augmentée",loading:"Chargement de l’objet 3D…",arHelp:"Faites tourner l’objet avec le doigt. Touchez « Voir en réalité augmentée », visez le sol ou une table : l’objet se pose dans la pièce.",noAr:"Faites tourner l’objet avec le doigt ou la souris. La réalité augmentée s’active sur smartphone ou tablette compatible.",err3d:"L’objet 3D n’a pas pu être chargé. Demandez à l’enseignant de vérifier le code.",errMod:"Impossible de charger le module 3D. Vérifiez la connexion internet.",openVideo:"▶ Ouvrir la vidéo",openLink:"Ouvrir le lien →",noVoice:"Lecture vocale indisponible",bad:"Code illisible",badMsg:"Ce code est abîmé ou incomplet. Demandez à l’enseignant de le réimprimer.",old:"Ce navigateur est trop ancien pour lire ce code. Mettez à jour l’appareil.",smaller:"Réduire le texte",bigger:"Agrandir le texte",cam:"✨ Faire apparaître sur le code",aim:"Vise le code QR avec la caméra",found:"Bouge la feuille pour tourner autour !",camErr:"Caméra inaccessible. Autorise la caméra pour ce site dans les réglages, puis réessaie.",room:"Voir dans la pièce",close:"Fermer"},
+ en:{play:"▶ Listen",stop:"■ Stop",slow:"Slower",ar:"📱 View in augmented reality",loading:"Loading the 3D object…",arHelp:"Turn the object with your finger. Tap “View in augmented reality”, then point at the floor or a table: the object appears in the room.",noAr:"Turn the object with your finger or mouse. Augmented reality works on a compatible phone or tablet.",err3d:"The 3D object could not be loaded. Ask your teacher to check the code.",errMod:"The 3D module could not load. Check the internet connection.",openVideo:"▶ Open the video",openLink:"Open the link →",noVoice:"Read-aloud not available",bad:"Unreadable code",badMsg:"This code is damaged or incomplete. Ask your teacher to print it again.",old:"This browser is too old to read this code. Please update the device.",smaller:"Smaller text",bigger:"Larger text",cam:"✨ Make it appear on the code",aim:"Point the camera at the QR code",found:"Move the sheet to look around it!",camErr:"Camera not available. Allow camera access for this site in settings, then try again.",room:"View in the room",close:"Close"},
+ es:{play:"▶ Escuchar",stop:"■ Parar",slow:"Más lento",ar:"📱 Ver en realidad aumentada",loading:"Cargando el objeto 3D…",arHelp:"Gira el objeto con el dedo. Toca «Ver en realidad aumentada» y apunta al suelo o a una mesa: el objeto aparece en la sala.",noAr:"Gira el objeto con el dedo o el ratón. La realidad aumentada funciona en un teléfono o tableta compatible.",err3d:"No se pudo cargar el objeto 3D. Pide a tu profesor que revise el código.",errMod:"No se pudo cargar el módulo 3D. Revisa la conexión a internet.",openVideo:"▶ Abrir el vídeo",openLink:"Abrir el enlace →",noVoice:"Lectura en voz alta no disponible",bad:"Código ilegible",badMsg:"Este código está dañado o incompleto. Pide a tu profesor que lo vuelva a imprimir.",old:"Este navegador es demasiado antiguo para leer este código. Actualiza el dispositivo.",smaller:"Texto más pequeño",bigger:"Texto más grande",cam:"✨ Hacerlo aparecer sobre el código",aim:"Apunta la cámara al código QR",found:"¡Mueve la hoja para verlo por todos lados!",camErr:"Cámara no disponible. Permite el acceso a la cámara para este sitio en los ajustes y vuelve a intentarlo.",room:"Ver en la sala",close:"Cerrar"},
+ pt:{play:"▶ Ouvir",stop:"■ Parar",slow:"Mais devagar",ar:"📱 Ver em realidade aumentada",loading:"Carregando o objeto 3D…",arHelp:"Gire o objeto com o dedo. Toque em “Ver em realidade aumentada” e aponte para o chão ou uma mesa: o objeto aparece na sala.",noAr:"Gire o objeto com o dedo ou o mouse. A realidade aumentada funciona em celular ou tablet compatível.",err3d:"Não foi possível carregar o objeto 3D. Peça ao professor para verificar o código.",errMod:"Não foi possível carregar o módulo 3D. Verifique a conexão com a internet.",openVideo:"▶ Abrir o vídeo",openLink:"Abrir o link →",noVoice:"Leitura em voz alta indisponível",bad:"Código ilegível",badMsg:"Este código está danificado ou incompleto. Peça ao professor para imprimi-lo novamente.",old:"Este navegador é antigo demais para ler este código. Atualize o aparelho.",smaller:"Diminuir o texto",bigger:"Aumentar o texto",cam:"✨ Fazer aparecer no código",aim:"Aponte a câmera para o código QR",found:"Mexa a folha para ver por todos os lados!",camErr:"Câmera indisponível. Permita o acesso à câmera para este site nas configurações e tente de novo.",room:"Ver na sala",close:"Fechar"},
+ nl:{play:"▶ Luisteren",stop:"■ Stoppen",slow:"Langzamer",ar:"📱 Bekijk in augmented reality",loading:"Het 3D-object wordt geladen…",arHelp:"Draai het object met je vinger. Tik op „Bekijk in augmented reality” en richt op de vloer of een tafel: het object verschijnt in de ruimte.",noAr:"Draai het object met je vinger of muis. Augmented reality werkt op een geschikte telefoon of tablet.",err3d:"Het 3D-object kon niet worden geladen. Vraag je leerkracht de code te controleren.",errMod:"De 3D-module kon niet worden geladen. Controleer de internetverbinding.",openVideo:"▶ Video openen",openLink:"Link openen →",noVoice:"Voorlezen niet beschikbaar",bad:"Onleesbare code",badMsg:"Deze code is beschadigd of onvolledig. Vraag je leerkracht hem opnieuw af te drukken.",old:"Deze browser is te oud om deze code te lezen. Werk het apparaat bij.",smaller:"Kleinere tekst",bigger:"Grotere tekst",cam:"✨ Laat het verschijnen op de code",aim:"Richt de camera op de QR-code",found:"Beweeg het blad om eromheen te kijken!",camErr:"Camera niet beschikbaar. Sta cameratoegang toe voor deze site in de instellingen en probeer opnieuw.",room:"Bekijk in de ruimte",close:"Sluiten"}};
 let L=I18N.fr;
-function setLang(code){L=I18N[(code||"fr").slice(0,2)]||I18N.fr;$("#r-play").textContent=L.play;$("#r-slow").textContent=L.slow;$("#r-minus").setAttribute("aria-label",L.smaller);$("#r-plus").setAttribute("aria-label",L.bigger)}
+function setLang(code){L=I18N[(code||"fr").slice(0,2)]||I18N.fr;$("#r-play").textContent=L.play;$("#r-slow").textContent=L.slow;$("#r-minus").setAttribute("aria-label",L.smaller);$("#cam-close").setAttribute("aria-label",L.close);$("#r-plus").setAttribute("aria-label",L.bigger)}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function safeUrl(u){try{const x=new URL(u,base()||location.href);return /^https?:$/.test(x.protocol)?x.href:""}catch(e){return ""}}
 function ytId(u){const m=u.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/);return m?m[1]:""}
@@ -293,21 +307,102 @@ function renderReader(d,preview){
 }
 function loadMV(){return window.customElements&&customElements.get("model-viewer")?Promise.resolve():new Promise((ok,ko)=>{const s=document.createElement("script");s.type="module";s.src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js";s.onload=()=>customElements.whenDefined("model-viewer").then(ok);s.onerror=ko;document.head.appendChild(s)})}
 function show3d(m,u,t){
-  m.innerHTML='<p class="arinfo">'+esc(L.loading)+'</p>';
+  m.innerHTML='';
+  const go=document.createElement("button");go.type="button";go.className="camstart";go.textContent=L.cam;go.onclick=()=>startMarker(u);
+  m.appendChild(go);
+  const holder=document.createElement("div");holder.innerHTML='<p class="arinfo">'+esc(L.loading)+'</p>';m.appendChild(holder);
   loadMV().then(()=>{
-    m.innerHTML='';
+    holder.innerHTML='';
     const mv=document.createElement("model-viewer");
     mv.setAttribute("src",u);mv.setAttribute("alt",t||"Objet 3D");
     ["ar","camera-controls","auto-rotate","touch-action"].forEach(a=>mv.setAttribute(a,a==="touch-action"?"pan-y":""));
     mv.setAttribute("ar-modes","webxr scene-viewer quick-look");mv.setAttribute("ar-scale","auto");mv.setAttribute("shadow-intensity","1");
-    const b=document.createElement("button");b.slot="ar-button";b.className="arbtn";b.type="button";b.textContent=L.ar;mv.appendChild(b);
-    const info=document.createElement("p");info.className="arinfo";
-    info.textContent=L.arHelp;
-    mv.addEventListener("load",()=>{if(!mv.canActivateAR)info.textContent=L.noAr;});
-    mv.addEventListener("error",()=>{m.innerHTML='<div class="err">'+esc(L.err3d)+'</div>'});
-    m.appendChild(mv);m.appendChild(info);
-  }).catch(()=>{m.innerHTML='<div class="err">'+esc(L.errMod)+'</div>'});
+    const b=document.createElement("button");b.slot="ar-button";b.className="roombtn";b.type="button";b.textContent=L.room;mv.appendChild(b);
+    mv.addEventListener("error",()=>{holder.innerHTML='<div class="err">'+esc(L.err3d)+'</div>'});
+    holder.appendChild(mv);
+  }).catch(()=>{holder.innerHTML='<div class="err">'+esc(L.errMod)+'</div>'});
 }
+
+/* ---------- réalité augmentée ancrée sur le code QR ---------- */
+const AR_LIBS=["https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js","https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js","https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"];
+function loadScript(src){return new Promise((ok,ko)=>{if(document.querySelector('script[src="'+src+'"]'))return ok();const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=ko;document.head.appendChild(s)})}
+async function loadAR(){for(const src of AR_LIBS)await loadScript(src)}
+function solve(A,b){const n=b.length;for(let i=0;i<n;i++){let p=i;for(let r=i+1;r<n;r++)if(Math.abs(A[r][i])>Math.abs(A[p][i]))p=r;[A[i],A[p]]=[A[p],A[i]];[b[i],b[p]]=[b[p],b[i]];const d=A[i][i];if(Math.abs(d)<1e-12)return null;for(let r=i+1;r<n;r++){const f=A[r][i]/d;for(let c=i;c<n;c++)A[r][c]-=f*A[i][c];b[r]-=f*b[i]}}const x=new Array(n);for(let i=n-1;i>=0;i--){let v=b[i];for(let c=i+1;c<n;c++)v-=A[i][c]*x[c];x[i]=v/A[i][i]}return x}
+function poseFrom(pts,f,cx,cy){
+  const M=[[-.5,.5],[.5,.5],[.5,-.5],[-.5,-.5]],A=[],b=[];
+  for(let i=0;i<4;i++){const X=M[i][0],Y=M[i][1],x=(pts[i].x-cx)/f,y=(pts[i].y-cy)/f;A.push([X,Y,1,0,0,0,-x*X,-x*Y]);b.push(x);A.push([0,0,0,X,Y,1,-y*X,-y*Y]);b.push(y)}
+  const h=solve(A,b);if(!h)return null;
+  const nrm=v=>Math.hypot(v[0],v[1],v[2]);
+  const h1=[h[0],h[3],h[6]],h2=[h[1],h[4],h[7]],h3=[h[2],h[5],1];
+  let l=2/(nrm(h1)+nrm(h2));if(h3[2]*l<0)l=-l;
+  let r1=h1.map(v=>v*l),r2=h2.map(v=>v*l);const t=h3.map(v=>v*l);
+  const a=nrm(r1);r1=r1.map(v=>v/a);const d=r1[0]*r2[0]+r1[1]*r2[1]+r1[2]*r2[2];r2=r2.map((v,i)=>v-d*r1[i]);const c=nrm(r2);r2=r2.map(v=>v/c);
+  const r3=[r1[1]*r2[2]-r1[2]*r2[1],r1[2]*r2[0]-r1[0]*r2[2],r1[0]*r2[1]-r1[1]*r2[0]];
+  return {r1,r2,r3,t};
+}
+let AR=null;
+async function startMarker(url){
+  const ov=$("#arcam"),hint=$("#cam-hint"),video=$("#cam-video"),glc=$("#cam-gl");
+  ov.hidden=false;hint.textContent=L.loading;
+  let stream;
+  try{
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error("cam");
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}},audio:false});
+  }catch(e){hint.textContent=L.camErr;return}
+  video.srcObject=stream;try{await video.play()}catch(e){}
+  try{await loadAR()}catch(e){hint.textContent=L.errMod;stopMarker();ov.hidden=false;return}
+  await new Promise(r=>{if(video.videoWidth)r();else video.onloadedmetadata=()=>r()});
+  const W=video.videoWidth,H=video.videoHeight,f=0.5*Math.max(W,H)/Math.tan(30*Math.PI/180);
+  glc.width=W;glc.height=H;
+  const renderer=new THREE.WebGLRenderer({canvas:glc,alpha:true,antialias:true});renderer.setSize(W,H,false);renderer.outputEncoding=THREE.sRGBEncoding;
+  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(2*Math.atan(H/2/f)*180/Math.PI,W/H,0.01,100);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x445544,1.1));const sun=new THREE.DirectionalLight(0xffffff,0.9);sun.position.set(1,2,3);scene.add(sun);
+  const anchor=new THREE.Group();anchor.visible=false;scene.add(anchor);
+  const upright=new THREE.Group();upright.rotation.x=Math.PI/2;anchor.add(upright);
+  let mixer=null;
+  new THREE.GLTFLoader().load(url,g=>{
+    const obj=g.scene,box=new THREE.Box3().setFromObject(obj),size=box.getSize(new THREE.Vector3()),ctr=box.getCenter(new THREE.Vector3());
+    const k=Math.min(1.4/(size.y||1),1.6/(Math.max(size.x,size.z)||1));
+    obj.position.set(-ctr.x,-box.min.y,-ctr.z);const piv=new THREE.Group();piv.scale.setScalar(k);piv.add(obj);upright.add(piv);
+    if(g.animations&&g.animations.length){mixer=new THREE.AnimationMixer(obj);mixer.clipAction(g.animations[0]).play()}
+    hint.textContent=L.aim;
+  },undefined,()=>{hint.textContent=L.err3d});
+  const sc=Math.min(1,640/Math.max(W,H)),dw=Math.round(W*sc),dh=Math.round(H*sc);
+  const work=document.createElement("canvas");work.width=dw;work.height=dh;const wctx=work.getContext("2d",{willReadFrequently:true});
+  const mat=new THREE.Matrix4(),tp=new THREE.Vector3(),tq=new THREE.Quaternion(),ts=new THREE.Vector3();
+  let last=0,first=true,clock=new THREE.Clock();
+  AR={stream,renderer,raf:0};
+  const loop=()=>{
+    AR.raf=requestAnimationFrame(loop);
+    const dt=clock.getDelta();if(mixer)mixer.update(dt);
+    if(video.readyState>=2){
+      wctx.drawImage(video,0,0,dw,dh);
+      const img=wctx.getImageData(0,0,dw,dh),q=jsQR(img.data,dw,dh,{inversionAttempts:"dontInvert"});
+      if(q){
+        const L4=q.location,pts=[L4.topLeftCorner,L4.topRightCorner,L4.bottomRightCorner,L4.bottomLeftCorner].map(p=>({x:p.x/sc,y:p.y/sc}));
+        const P=poseFrom(pts,f,W/2,H/2);
+        if(P){
+          const {r1,r2,r3,t}=P;
+          mat.set(r1[0],r2[0],r3[0],t[0],-r1[1],-r2[1],-r3[1],-t[1],-r1[2],-r2[2],-r3[2],-t[2],0,0,0,1);
+          mat.decompose(tp,tq,ts);
+          if(first||performance.now()-last>700){anchor.position.copy(tp);anchor.quaternion.copy(tq);first=false}
+          else{anchor.position.lerp(tp,0.5);anchor.quaternion.slerp(tq,0.5)}
+          if(!anchor.visible){anchor.visible=true;hint.textContent=L.found}
+          last=performance.now();
+        }
+      }
+      if(anchor.visible&&performance.now()-last>700){anchor.visible=false;hint.textContent=L.aim}
+    }
+    renderer.render(scene,camera);
+  };
+  loop();
+}
+function stopMarker(){
+  if(AR){cancelAnimationFrame(AR.raf);try{AR.stream.getTracks().forEach(t=>t.stop())}catch(e){}try{AR.renderer.dispose()}catch(e){}AR=null}
+  const v=$("#cam-video");if(v.srcObject){try{v.srcObject.getTracks().forEach(t=>t.stop())}catch(e){}v.srcObject=null}
+  $("#arcam").hidden=true;
+}
+$("#cam-close").onclick=stopMarker;
 function applySize(){$("#r-text").style.setProperty("--rsize",size+"rem")}
 function voiceFor(lang){const vs=speechSynthesis.getVoices();return vs.find(v=>v.lang===lang)||vs.find(v=>v.lang.replace("_","-").startsWith(lang.slice(0,2)))}
 function stop(){try{speechSynthesis.cancel()}catch(e){}document.querySelectorAll(".w.on").forEach(e=>e.classList.remove("on"));$("#r-play").textContent=L.play}
