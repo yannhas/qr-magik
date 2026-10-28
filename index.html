@@ -93,6 +93,29 @@ model-viewer{width:100%;height:min(62vh,520px);background:var(--sheet);border:1p
 #arcam video,#arcam canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .camclose{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));width:48px;height:48px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;font-size:1.3rem;cursor:pointer}
 .camhint{position:absolute;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;padding:12px 18px;border-radius:999px;font-weight:700;text-align:center;max-width:calc(100% - 32px)}
+.space{gap:14px}
+.spbody a:not(.btn){color:var(--canopy);font-weight:700}
+.space-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}
+.pill{font-size:.78rem;font-weight:700;padding:4px 12px;border-radius:999px;background:var(--warn-bg);color:var(--warn)}
+.pill.on{background:var(--tag);color:var(--canopy)}
+.spbody{display:grid;gap:12px}
+.spbody .hint{margin:0}
+.setup{margin:0;padding-left:1.3rem;display:grid;gap:12px}
+.setup li span{display:inline}
+.setup .btn{display:inline-block;text-decoration:none;margin:0 6px 4px 0;padding:6px 12px;font-size:.9rem}
+.keyrow{display:flex!important;flex-wrap:wrap;gap:10px;align-items:end}
+.keyrow label{flex:1 1 220px}
+code{font-size:.85em;background:var(--tag);padding:1px 5px;border-radius:4px}
+.lib{display:grid;gap:6px;margin-top:10px}
+.libitem{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+.libitem .nm{flex:1 1 180px;min-width:0;overflow-wrap:anywhere;font-size:.9rem}
+.libitem .sz{font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.libitem button{font:inherit;font-size:.82rem;border:1px solid var(--line);background:var(--sheet);color:var(--ink);border-radius:6px;padding:5px 10px;cursor:pointer}
+.libitem button.danger{color:var(--warn)}
+.mediapick{display:grid;gap:10px}
+.pickrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.filebtn{display:inline-block;font-weight:700}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
 .urltools{display:grid;gap:10px;margin-top:-6px}
 .checkres{align-self:center;font-size:.9rem;font-weight:700}
 .checkres.ok{color:var(--canopy)}.checkres.ko{color:var(--warn)}
@@ -117,9 +140,36 @@ model-viewer{width:100%;height:min(62vh,520px);background:var(--sheet);border:1p
     <div>
       <div class="eyebrow">Réalité augmentée pour la classe</div>
       <h1>QR <span>Magik</span></h1>
-      <p class="lede">Collez un code sur une fiche, un affichage ou un cahier. L’élève le scanne avec l’appareil photo de la tablette : le texte est lu à voix haute, l’image ou la vidéo s’affiche. Aucune application à installer, aucun compte.</p>
+      <p class="lede">Collez un code sur une fiche, un affichage ou un cahier. L’élève le scanne avec l’appareil photo du téléphone ou de la tablette : un objet 3D surgit sur la feuille, un texte est lu à voix haute, une image, un son ou une vidéo s’affiche. Aucune application à installer.</p>
     </div>
   </header>
+
+  <section class="panel space" id="space">
+    <div class="space-head">
+      <div>
+        <div class="eyebrow">Mon espace de fichiers</div>
+        <h2>Vos propres objets 3D, images, sons et vidéos</h2>
+      </div>
+      <span class="pill" id="sp-state">Non connecté</span>
+    </div>
+    <div id="sp-off" class="spbody">
+      <p class="hint">Vos fichiers sont rangés dans <b>votre</b> compte GitHub gratuit, pas chez QR Magik. À faire une seule fois par appareil :</p>
+      <ol class="setup">
+        <li><span>Si vous n’avez pas de compte, créez-en un gratuitement sur <a href="https://github.com/signup" target="_blank" rel="noopener">github.com</a>.</span></li>
+        <li><span><a class="btn ghost" href="https://github.com/settings/tokens/new?scopes=public_repo&amp;description=QR%20Magik" target="_blank" rel="noopener">Créer ma clé QR Magik</a> Sur la page qui s’ouvre, choisissez une durée (par exemple 1 an), descendez tout en bas, cliquez sur <b>Generate token</b> et copiez la clé qui commence par <code>ghp_</code>.</span></li>
+        <li><span class="keyrow"><label for="sp-token">Collez la clé ici<input id="sp-token" type="password" autocomplete="off" placeholder="ghp_…"></label><button class="btn" type="button" id="sp-connect">Connecter</button></span><span class="checkres" id="sp-res" aria-live="polite"></span></li>
+      </ol>
+      <p class="hint">La clé reste enregistrée sur cet appareil uniquement. Ne la communiquez à personne. Sur un ordinateur partagé, déconnectez-vous après usage.</p>
+    </div>
+    <div id="sp-on" class="spbody" hidden>
+      <p class="hint" style="margin:0">Connecté au compte <b id="sp-user"></b>. Vos fichiers sont dans le dépôt public <a id="sp-repo" target="_blank" rel="noopener"></a>. N’y mettez ni photos d’élèves ni données personnelles : tout le monde peut les voir.</p>
+      <details id="sp-lib">
+        <summary>Mes fichiers en ligne</summary>
+        <div class="lib" id="lib"></div>
+      </details>
+      <div class="btns"><button class="btn ghost" type="button" id="sp-logout">Se déconnecter de cet appareil</button></div>
+    </div>
+  </section>
 
   <section class="bench">
     <form class="panel" id="form" autocomplete="off">
@@ -142,21 +192,19 @@ model-viewer{width:100%;height:min(62vh,520px);background:var(--sheet);border:1p
       </label>
       <div class="count" id="count"></div>
 
-      <label for="f-url" id="lbl-url" hidden>Adresse du média <small id="url-help"></small>
-        <input id="f-url" type="url" inputmode="url" placeholder="https://github.com/votre-pseudo/mes-modeles/blob/main/toucan.glb">
-      </label>
-      <div class="urltools" id="url-tools" hidden>
-        <div class="btns"><button class="btn ghost" type="button" id="check">Vérifier le fichier</button><span class="checkres" id="check-res" aria-live="polite"></span></div>
-        <details class="howhost">
-          <summary>Où mettre mes propres fichiers ?</summary>
-          <ol>
-            <li>Créez un compte gratuit sur <b>github.com</b> (une seule fois).</li>
-            <li>Cliquez sur <b>+ → New repository</b>, nommez-le <b>mes-modeles</b>, cochez <b>Public</b>, puis <b>Create repository</b>.</li>
-            <li>Cliquez sur <b>uploading an existing file</b>, glissez vos fichiers (.glb, .jpg, .png, .mp3, .mp4), puis <b>Commit changes</b>.</li>
-            <li>Cliquez sur un fichier dans la liste et copiez l’adresse de la page dans la barre du navigateur.</li>
-            <li>Collez-la ici. QR Magik la transforme en lien direct, puis touchez <b>Vérifier le fichier</b>.</li>
-          </ol>
-          <p class="hint">Fichiers de 20 Mo maximum, objets 3D de préférence sous 10 Mo. Si vous modifiez un fichier, déposez-le sous un nouveau nom : l’ancien lien peut rester en mémoire plusieurs heures. Les fichiers d’un dépôt public sont visibles par tous : n’y mettez ni photos d’élèves ni données personnelles.</p>
+      <div class="mediapick" id="media-pick" hidden>
+        <div class="pickrow">
+          <label class="btn filebtn" for="f-file" id="f-file-lbl">📁 Choisir un fichier sur cet appareil</label>
+          <input id="f-file" type="file" class="vh">
+          <span class="checkres" id="up-res" aria-live="polite"></span>
+        </div>
+        <p class="hint" id="up-need">Pour envoyer vos propres fichiers, connectez d’abord votre espace de fichiers (encadré au-dessus).</p>
+        <details class="howhost" id="have-link">
+          <summary>J’ai déjà un lien vers mon fichier</summary>
+          <label for="f-url" id="lbl-url" style="margin-top:10px">Adresse du média <small id="url-help"></small>
+            <input id="f-url" type="url" inputmode="url" placeholder="https://">
+          </label>
+          <div class="btns" style="margin-top:8px"><button class="btn ghost" type="button" id="check">Vérifier le fichier</button><span class="checkres" id="check-res" aria-live="polite"></span></div>
         </details>
       </div>
 
@@ -451,7 +499,7 @@ let kind="texte";
 const help={"3d":"fichier .glb : lien GitHub de la page du fichier, ou lien direct",image:"lien direct vers une image (.jpg, .png) hébergée en ligne",audio:"lien direct vers un fichier son (.mp3, .m4a), par exemple un enregistrement en créole",video:"lien YouTube, PeerTube ou fichier .mp4",lien:"page web à ouvrir"};
 function setKind(k){
   kind=k;document.querySelectorAll(".types button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===k));
-  $("#lbl-url").hidden=k==="texte";$("#url-tools").hidden=k==="texte";$("#url-help").textContent=help[k]?"("+help[k]+")":"";
+  $("#media-pick").hidden=k==="texte"||k==="lien";if(k==="lien")$("#have-link").open=true;$("#lbl-url").parentElement.hidden=false;$("#f-file").accept={"3d":".glb",image:"image/*",audio:"audio/*",video:"video/mp4,video/webm,video/quicktime"}[k]||"";if(k==="lien"){$("#media-pick").hidden=false;$("#f-file-lbl").hidden=true;$("#up-need").hidden=true}else{$("#f-file-lbl").hidden=false;spUi()}$("#url-help").textContent=help[k]?"("+help[k]+")":"";
   $("#lbl-text").firstChild.textContent=(k==="texte")?"Texte ":"Texte d’accompagnement (facultatif) ";
   refresh();
 }
@@ -513,6 +561,98 @@ $("#check").onclick=async()=>{
     r.textContent=e.message==="notglb"?"✗ Ce fichier n’est pas un .glb. Exportez votre modèle au format GLB.":e.message&&e.message.startsWith("http")?"✗ Fichier introuvable. Vérifiez que le dépôt est Public et que l’adresse est complète.":"✗ Ce fichier ne peut pas être affiché depuis un autre site. Utilisez un dépôt GitHub public.";
   }
 };
+/* ---------- espace de fichiers GitHub de l'enseignant ---------- */
+const REPO="qr-magik-fichiers";
+const GH={token:store.get("pa-gh-token",""),user:store.get("pa-gh-user",""),branch:store.get("pa-gh-branch","main")};
+const FOLDERS={"3d":"3d",image:"images",audio:"sons",video:"videos"};
+async function gh(path,opt={}){
+  const h={"Accept":"application/vnd.github+json","Authorization":"Bearer "+GH.token};if(opt.body)h["Content-Type"]="application/json";
+  const r=await fetch("https://api.github.com"+path,{...opt,headers:h});
+  const j=r.status===204?null:await r.json().catch(()=>null);
+  if(!r.ok){const e=new Error((j&&j.message)||("HTTP "+r.status));e.status=r.status;throw e}
+  return j;
+}
+function spOn(){return !!(GH.token&&GH.user)}
+function spUi(){
+  const on=spOn();
+  $("#sp-off").hidden=on;$("#sp-on").hidden=!on;
+  const st=$("#sp-state");st.textContent=on?"Connecté":"Non connecté";st.classList.toggle("on",on);
+  if(on){$("#sp-user").textContent=GH.user;const a=$("#sp-repo");a.href="https://github.com/"+GH.user+"/"+REPO;a.textContent=GH.user+"/"+REPO}
+  if(kind!=="lien")$("#up-need").hidden=on;
+}
+$("#sp-connect").onclick=async()=>{
+  const r=$("#sp-res"),t=$("#sp-token").value.trim();r.className="checkres";
+  if(!t){r.textContent="Collez d’abord votre clé.";r.classList.add("ko");return}
+  r.textContent="Connexion…";GH.token=t;
+  try{
+    const u=await gh("/user");GH.user=u.login;
+    let repo;
+    try{repo=await gh("/repos/"+u.login+"/"+REPO)}
+    catch(e){if(e.status!==404)throw e;r.textContent="Création de votre dossier de fichiers…";repo=await gh("/user/repos",{method:"POST",body:JSON.stringify({name:REPO,description:"Fichiers pour QR Magik : objets 3D, images, sons, vidéos",auto_init:true,has_issues:false,has_wiki:false,has_projects:false})})}
+    GH.branch=repo.default_branch||"main";
+    store.set("pa-gh-token",GH.token);store.set("pa-gh-user",GH.user);store.set("pa-gh-branch",GH.branch);
+    $("#sp-token").value="";r.textContent="";spUi();loadLib();
+  }catch(e){
+    GH.token="";GH.user="";r.classList.add("ko");
+    r.textContent=e.status===401?"✗ Clé refusée. Vérifiez que vous l’avez copiée en entier.":e.status===403||e.status===404?"✗ La clé n’a pas le droit de créer un dépôt. Recréez-la avec le lien « Créer ma clé QR Magik ».":"✗ Connexion impossible : "+e.message;
+  }
+};
+$("#sp-logout").onclick=()=>{GH.token="";GH.user="";["pa-gh-token","pa-gh-user","pa-gh-branch"].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});spUi()};
+function cdn(path,ref){return "https://cdn.jsdelivr.net/gh/"+GH.user+"/"+REPO+"@"+(ref||GH.branch)+"/"+path.split("/").map(encodeURIComponent).join("/")}
+function slug(n){return n.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40)||"fichier"}
+function toB64(file){return new Promise((ok,ko)=>{const fr=new FileReader();fr.onload=()=>ok(String(fr.result).split(",")[1]);fr.onerror=ko;fr.readAsDataURL(file)})}
+$("#f-file-lbl").addEventListener("click",e=>{if(!spOn()){e.preventDefault();$("#space").scrollIntoView({behavior:"smooth"});$("#up-res").className="checkres ko";$("#up-res").textContent="Connectez d’abord votre espace de fichiers."}});
+$("#f-file").addEventListener("change",async e=>{
+  const f=e.target.files&&e.target.files[0];e.target.value="";if(!f)return;
+  const r=$("#up-res");r.className="checkres";
+  const mb=f.size/1048576;
+  if(mb>20){r.classList.add("ko");r.textContent="✗ Fichier trop lourd ("+mb.toFixed(1)+" Mo). Maximum 20 Mo.";return}
+  if(kind==="3d"){const head=new Uint8Array(await f.slice(0,4).arrayBuffer());if(String.fromCharCode(...head)!=="glTF"){r.classList.add("ko");r.textContent="✗ Ce fichier n’est pas un objet 3D au format .glb.";return}}
+  const dot=f.name.lastIndexOf("."),ext=dot>0?f.name.slice(dot+1).toLowerCase():"bin",base=slug(dot>0?f.name.slice(0,dot):f.name);
+  const stamp=new Date().toISOString().slice(0,16).replace(/[-:T]/g,"");
+  const path=(FOLDERS[kind]||"fichiers")+"/"+base+"-"+stamp+"."+ext;
+  r.textContent="Envoi en cours… ("+mb.toFixed(1)+" Mo)";
+  try{
+    const content=await toB64(f);
+    const out=await gh("/repos/"+GH.user+"/"+REPO+"/contents/"+path.split("/").map(encodeURIComponent).join("/"),{method:"PUT",body:JSON.stringify({message:"Ajout de "+f.name,content,branch:GH.branch})});
+    $("#f-url").value=cdn(path,out&&out.commit&&out.commit.sha);
+    if(!$("#f-title").value.trim())$("#f-title").value=(dot>0?f.name.slice(0,dot):f.name).replace(/[-_]+/g," ");
+    r.classList.add("ok");r.textContent="✓ "+f.name+" est en ligne"+(kind==="3d"&&mb>10?" (lourd : chargement lent possible)":"");
+    refresh();libLoaded=false;if($("#sp-lib").open)loadLib();
+  }catch(err){
+    r.classList.add("ko");
+    r.textContent=err.status===401?"✗ Votre clé a expiré ou a été supprimée. Déconnectez-vous puis reconnectez-vous avec une nouvelle clé.":"✗ Envoi impossible : "+err.message;
+  }
+});
+let libLoaded=false;
+async function loadLib(){
+  const el=$("#lib");if(!spOn())return;el.innerHTML='<p class="hint">Chargement…</p>';
+  const rows=[];
+  for(const [k,folder] of Object.entries(FOLDERS)){
+    try{const list=await gh("/repos/"+GH.user+"/"+REPO+"/contents/"+folder+"?ref="+GH.branch);(list||[]).filter(x=>x.type==="file").forEach(x=>rows.push({k,...x}))}
+    catch(e){if(e.status!==404){el.innerHTML='<p class="hint">Impossible de lire vos fichiers : '+esc(e.message)+'</p>';return}}
+  }
+  libLoaded=true;
+  if(!rows.length){el.innerHTML='<p class="hint">Aucun fichier pour l’instant. Choisissez un type (Objet 3D, Image…) puis « Choisir un fichier sur cet appareil ».</p>';return}
+  const lab={"3d":"3D",image:"Image",audio:"Son",video:"Vidéo"};
+  el.innerHTML="";
+  rows.forEach(x=>{
+    const it=document.createElement("div");it.className="libitem";
+    it.innerHTML='<span class="k pill on"></span><span class="nm"></span><span class="sz"></span><button type="button" data-a="use">Utiliser</button><button type="button" class="danger" data-a="del">Supprimer</button>';
+    it.querySelector(".k").textContent=lab[x.k];it.querySelector(".nm").textContent=x.name;it.querySelector(".sz").textContent=(x.size/1048576).toFixed(1)+" Mo";
+    it.querySelector('[data-a="use"]').onclick=()=>{setKind(x.k);$("#f-url").value=cdn(x.path);if(!$("#f-title").value.trim())$("#f-title").value=x.name.replace(/-\d{12}\.[^.]+$/,"").replace(/[-_]+/g," ");refresh();$("#form").scrollIntoView({behavior:"smooth"})};
+    const del=it.querySelector('[data-a="del"]');let armed=false;
+    del.onclick=async()=>{
+      if(!armed){armed=true;del.textContent="Confirmer : les codes déjà imprimés ne marcheront plus";setTimeout(()=>{armed=false;del.textContent="Supprimer"},5000);return}
+      del.disabled=true;del.textContent="Suppression…";
+      try{await gh("/repos/"+GH.user+"/"+REPO+"/contents/"+x.path.split("/").map(encodeURIComponent).join("/"),{method:"DELETE",body:JSON.stringify({message:"Suppression de "+x.name,sha:x.sha,branch:GH.branch})});it.remove()}
+      catch(e){del.disabled=false;del.textContent="Échec : réessayer"}
+    };
+    el.appendChild(it);
+  });
+}
+$("#sp-lib").addEventListener("toggle",()=>{if($("#sp-lib").open&&!libLoaded)loadLib()});
+
 $("#try").onclick=()=>renderReader(data(),true);
 $("#dl").onclick=()=>{const img=$("#qr img");if(!img)return;const a=document.createElement("a");a.href=img.src;a.download=(($("#f-title").value||"code").replace(/[^\w\- ]+/g,"").trim()||"code")+".png";a.click()};
 
@@ -554,6 +694,7 @@ async function boot(){
   }
   $("#f-base").value=store.get("pa-base","");
   if(!base())$("#settings").open=true;
+  spUi();
   fill({t:"L’astronaute",x:"",k:"3d",m:"https://modelviewer.dev/shared-assets/models/Astronaut.glb",l:"fr-FR",r:"0.9"});
   renderSheet();
 }
