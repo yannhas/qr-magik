@@ -392,7 +392,7 @@ function show3d(m,u,t){
 }
 
 /* ---------- réalité augmentée ancrée sur le code QR ---------- */
-const AR_LIBS=["https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js","https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js","https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"];
+const AR_LIBS=["https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js","https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js","https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/DRACOLoader.js","https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/libs/meshopt_decoder.js","https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"];
 function loadScript(src){return new Promise((ok,ko)=>{if(document.querySelector('script[src="'+src+'"]'))return ok();const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=ko;document.head.appendChild(s)})}
 async function loadAR(){for(const src of AR_LIBS)await loadScript(src)}
 function solve(A,b){const n=b.length;for(let i=0;i<n;i++){let p=i;for(let r=i+1;r<n;r++)if(Math.abs(A[r][i])>Math.abs(A[p][i]))p=r;[A[i],A[p]]=[A[p],A[i]];[b[i],b[p]]=[b[p],b[i]];const d=A[i][i];if(Math.abs(d)<1e-12)return null;for(let r=i+1;r<n;r++){const f=A[r][i]/d;for(let c=i;c<n;c++)A[r][c]-=f*A[i][c];b[r]-=f*b[i]}}const x=new Array(n);for(let i=n-1;i>=0;i--){let v=b[i];for(let c=i+1;c<n;c++)v-=A[i][c]*x[c];x[i]=v/A[i][i]}return x}
@@ -443,7 +443,10 @@ async function startMarker(url){
     if(ptrs.size===2&&pinch0){const [a,b]=[...ptrs.values()];spin.scale.setScalar(Math.min(4,Math.max(0.3,scale0*Math.hypot(a.x-b.x,a.y-b.y)/pinch0)))}};
   wrap.onpointerup=wrap.onpointercancel=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch0=0};
   let mixer=null;
-  new THREE.GLTFLoader().load(url,g=>{
+  const gl=new THREE.GLTFLoader();
+  try{const dl=new THREE.DRACOLoader();dl.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/");gl.setDRACOLoader(dl)}catch(e){}
+  try{if(window.MeshoptDecoder)gl.setMeshoptDecoder(MeshoptDecoder)}catch(e){}
+  gl.load(url,g=>{
     const obj=g.scene,box=new THREE.Box3().setFromObject(obj),size=box.getSize(new THREE.Vector3()),ctr=box.getCenter(new THREE.Vector3());
     const k=Math.min(1.4/(size.y||1),1.6/(Math.max(size.x,size.z)||1));
     obj.position.set(-ctr.x,-box.min.y,-ctr.z);const piv=new THREE.Group();piv.scale.setScalar(k);piv.add(obj);upright.add(piv);
@@ -525,7 +528,7 @@ if("speechSynthesis" in window)speechSynthesis.onvoiceschanged=()=>{};
 
 /* ---------- générateur ---------- */
 let kind="texte";
-const help={"3d":"fichier .glb : lien GitHub de la page du fichier, ou lien direct",image:"lien direct vers une image (.jpg, .png) hébergée en ligne",audio:"lien direct vers un fichier son (.mp3, .m4a), par exemple un enregistrement en créole",video:"lien YouTube, PeerTube ou fichier .mp4",lien:"page web à ouvrir"};
+const help={"3d":"fichier .glb, 50 Mo maximum, idéalement moins de 10 Mo",image:"lien direct vers une image (.jpg, .png) hébergée en ligne",audio:"lien direct vers un fichier son (.mp3, .m4a), par exemple un enregistrement en créole",video:"lien YouTube, PeerTube ou fichier .mp4",lien:"page web à ouvrir"};
 function setKind(k){
   kind=k;document.querySelectorAll(".types button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===k));
   $("#media-pick").hidden=k==="texte"||k==="lien";if(k==="lien")$("#have-link").open=true;$("#lbl-url").parentElement.hidden=false;$("#f-file").accept={"3d":".glb",image:"image/*",audio:"audio/*",video:"video/mp4,video/webm,video/quicktime"}[k]||"";if(k==="lien"){$("#media-pick").hidden=false;$("#f-file-lbl").hidden=true;$("#up-need").hidden=true}else{$("#f-file-lbl").hidden=false;spUi()}$("#url-help").textContent=help[k]?"("+help[k]+")":"";
@@ -536,7 +539,9 @@ document.querySelectorAll(".types button").forEach(b=>b.onclick=()=>setKind(b.da
 function directUrl(u){
   u=(u||"").trim();
   let m=u.match(/^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)\/(?:blob|raw)\/([^\/]+)\/(.+)$/);
+  if(m&&/\.glb$/i.test(m[4].split(/[?#]/)[0]))return "https://raw.githubusercontent.com/"+m[1]+"/"+m[2]+"/"+m[3]+"/"+m[4].split(/[?#]/)[0];
   if(m)return "https://cdn.jsdelivr.net/gh/"+m[1]+"/"+m[2]+"@"+m[3]+"/"+m[4].split(/[?#]/)[0];
+  if(/^https?:\/\/raw\.githubusercontent\.com\/.+\.glb$/i.test(u))return u;
   m=u.match(/^https?:\/\/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/(?:refs\/heads\/)?([^\/]+)\/(.+)$/);
   if(m)return "https://cdn.jsdelivr.net/gh/"+m[1]+"/"+m[2]+"@"+m[3]+"/"+m[4].split(/[?#]/)[0];
   return u;
@@ -583,7 +588,7 @@ $("#check").onclick=async()=>{
     const b=new Uint8Array(await res.arrayBuffer()),mb=b.length/1048576;
     const mo=" ("+(Math.round(mb*10)/10)+" Mo)";
     if(kind==="3d"&&String.fromCharCode(...b.slice(0,4))!=="glTF")throw new Error("notglb");
-    if(mb>10){r.textContent="✓ Fichier accessible"+mo+", mais lourd : le chargement sera lent sur un réseau d’école.";r.classList.add("ok");return}
+    if(mb>10){r.textContent="✓ Fichier accessible"+mo+", mais lourd : chargement lent et risque de plantage sur les tablettes anciennes. Pensez à le compresser.";r.classList.add("ok");return}
     r.textContent="✓ Fichier accessible"+mo;r.classList.add("ok");
   }catch(e){
     r.classList.add("ko");
@@ -627,6 +632,7 @@ $("#sp-connect").onclick=async()=>{
   }
 };
 $("#sp-logout").onclick=()=>{GH.token="";GH.user="";["pa-gh-token","pa-gh-user","pa-gh-branch"].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});spUi()};
+function rawUrl(path,ref){return "https://raw.githubusercontent.com/"+GH.user+"/"+REPO+"/"+(ref||GH.branch)+"/"+path.split("/").map(encodeURIComponent).join("/")}
 function cdn(path,ref){return "https://cdn.jsdelivr.net/gh/"+GH.user+"/"+REPO+"@"+(ref||GH.branch)+"/"+path.split("/").map(encodeURIComponent).join("/")}
 function slug(n){return n.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40)||"fichier"}
 function toB64(file){return new Promise((ok,ko)=>{const fr=new FileReader();fr.onload=()=>ok(String(fr.result).split(",")[1]);fr.onerror=ko;fr.readAsDataURL(file)})}
@@ -635,7 +641,8 @@ $("#f-file").addEventListener("change",async e=>{
   const f=e.target.files&&e.target.files[0];e.target.value="";if(!f)return;
   const r=$("#up-res");r.className="checkres";
   const mb=f.size/1048576;
-  if(mb>20){r.classList.add("ko");r.textContent="✗ Fichier trop lourd ("+mb.toFixed(1)+" Mo). Maximum 20 Mo.";return}
+  const maxMb=kind==="3d"?50:20;
+  if(mb>maxMb){r.classList.add("ko");r.textContent="✗ Fichier trop lourd ("+mb.toFixed(1)+" Mo). Maximum "+maxMb+" Mo"+(kind==="3d"?" : compressez-le d’abord, par exemple sur gltf.report.":".");return}
   if(kind==="3d"){const head=new Uint8Array(await f.slice(0,4).arrayBuffer());if(String.fromCharCode(...head)!=="glTF"){r.classList.add("ko");r.textContent="✗ Ce fichier n’est pas un objet 3D au format .glb.";return}}
   const dot=f.name.lastIndexOf("."),ext=dot>0?f.name.slice(dot+1).toLowerCase():"bin",base=slug(dot>0?f.name.slice(0,dot):f.name);
   const stamp=new Date().toISOString().slice(0,16).replace(/[-:T]/g,"");
@@ -643,10 +650,22 @@ $("#f-file").addEventListener("change",async e=>{
   r.textContent="Envoi en cours… ("+mb.toFixed(1)+" Mo)";
   try{
     const content=await toB64(f);
-    const out=await gh("/repos/"+GH.user+"/"+REPO+"/contents/"+path.split("/").map(encodeURIComponent).join("/"),{method:"PUT",body:JSON.stringify({message:"Ajout de "+f.name,content,branch:GH.branch})});
-    $("#f-url").value=cdn(path,out&&out.commit&&out.commit.sha);
+    if(mb>19){
+      /* gros fichier : API Git (blobs jusqu'à 100 Mo), servi par raw.githubusercontent.com */
+      const R="/repos/"+GH.user+"/"+REPO+"/git";
+      const blob=await gh(R+"/blobs",{method:"POST",body:JSON.stringify({content,encoding:"base64"})});
+      const ref=await gh(R+"/ref/heads/"+encodeURIComponent(GH.branch));
+      const head=await gh(R+"/commits/"+ref.object.sha);
+      const tree=await gh(R+"/trees",{method:"POST",body:JSON.stringify({base_tree:head.tree.sha,tree:[{path,mode:"100644",type:"blob",sha:blob.sha}]})});
+      const cm=await gh(R+"/commits",{method:"POST",body:JSON.stringify({message:"Ajout de "+f.name,tree:tree.sha,parents:[ref.object.sha]})});
+      await gh(R+"/refs/heads/"+encodeURIComponent(GH.branch),{method:"PATCH",body:JSON.stringify({sha:cm.sha})});
+      $("#f-url").value=rawUrl(path,cm.sha);
+    }else{
+      const out=await gh("/repos/"+GH.user+"/"+REPO+"/contents/"+path.split("/").map(encodeURIComponent).join("/"),{method:"PUT",body:JSON.stringify({message:"Ajout de "+f.name,content,branch:GH.branch})});
+      $("#f-url").value=cdn(path,out&&out.commit&&out.commit.sha);
+    }
     if(!$("#f-title").value.trim())$("#f-title").value=(dot>0?f.name.slice(0,dot):f.name).replace(/[-_]+/g," ");
-    r.classList.add("ok");r.textContent="✓ "+f.name+" est en ligne"+(kind==="3d"&&mb>10?" (lourd : chargement lent possible)":"");
+    r.classList.add("ok");r.textContent="✓ "+f.name+" est en ligne"+(kind==="3d"&&mb>10?". Fichier lourd : testez-le sur une tablette de la classe avant d’imprimer.":"");
     refresh();libLoaded=false;if($("#sp-lib").open)loadLib();
   }catch(err){
     r.classList.add("ko");
@@ -669,7 +688,7 @@ async function loadLib(){
     const it=document.createElement("div");it.className="libitem";
     it.innerHTML='<span class="k pill on"></span><span class="nm"></span><span class="sz"></span><button type="button" data-a="use">Utiliser</button><button type="button" class="danger" data-a="del">Supprimer</button>';
     it.querySelector(".k").textContent=lab[x.k];it.querySelector(".nm").textContent=x.name;it.querySelector(".sz").textContent=(x.size/1048576).toFixed(1)+" Mo";
-    it.querySelector('[data-a="use"]').onclick=()=>{setKind(x.k);$("#f-url").value=cdn(x.path);if(!$("#f-title").value.trim())$("#f-title").value=x.name.replace(/-\d{12}\.[^.]+$/,"").replace(/[-_]+/g," ");refresh();$("#form").scrollIntoView({behavior:"smooth"})};
+    it.querySelector('[data-a="use"]').onclick=()=>{setKind(x.k);$("#f-url").value=x.size>19*1048576?rawUrl(x.path):cdn(x.path);if(!$("#f-title").value.trim())$("#f-title").value=x.name.replace(/-\d{12}\.[^.]+$/,"").replace(/[-_]+/g," ");refresh();$("#form").scrollIntoView({behavior:"smooth"})};
     const del=it.querySelector('[data-a="del"]');let armed=false;
     del.onclick=async()=>{
       if(!armed){armed=true;del.textContent="Confirmer : les codes déjà imprimés ne marcheront plus";setTimeout(()=>{armed=false;del.textContent="Supprimer"},5000);return}
