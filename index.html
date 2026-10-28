@@ -93,6 +93,12 @@ model-viewer{width:100%;height:min(62vh,520px);background:var(--sheet);border:1p
 #arcam video,#arcam canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .camclose{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));width:48px;height:48px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;font-size:1.3rem;cursor:pointer}
 .camhint{position:absolute;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;padding:12px 18px;border-radius:999px;font-weight:700;text-align:center;max-width:calc(100% - 32px)}
+.urltools{display:grid;gap:10px;margin-top:-6px}
+.checkres{align-self:center;font-size:.9rem;font-weight:700}
+.checkres.ok{color:var(--canopy)}.checkres.ko{color:var(--warn)}
+.howhost{font-size:.9rem;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+.howhost summary{cursor:pointer;font-weight:700}
+.howhost ol{margin:.6rem 0;padding-left:1.2rem;display:grid;gap:4px}
 .arinfo{font-size:.9rem;color:var(--muted);margin:0}
 .err{background:var(--warn-bg);border-left:3px solid var(--warn);padding:14px;border-radius:6px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -137,8 +143,22 @@ model-viewer{width:100%;height:min(62vh,520px);background:var(--sheet);border:1p
       <div class="count" id="count"></div>
 
       <label for="f-url" id="lbl-url" hidden>Adresse du média <small id="url-help"></small>
-        <input id="f-url" type="url" inputmode="url" placeholder="https://">
+        <input id="f-url" type="url" inputmode="url" placeholder="https://github.com/votre-pseudo/mes-modeles/blob/main/toucan.glb">
       </label>
+      <div class="urltools" id="url-tools" hidden>
+        <div class="btns"><button class="btn ghost" type="button" id="check">Vérifier le fichier</button><span class="checkres" id="check-res" aria-live="polite"></span></div>
+        <details class="howhost">
+          <summary>Où mettre mes propres fichiers ?</summary>
+          <ol>
+            <li>Créez un compte gratuit sur <b>github.com</b> (une seule fois).</li>
+            <li>Cliquez sur <b>+ → New repository</b>, nommez-le <b>mes-modeles</b>, cochez <b>Public</b>, puis <b>Create repository</b>.</li>
+            <li>Cliquez sur <b>uploading an existing file</b>, glissez vos fichiers (.glb, .jpg, .png, .mp3, .mp4), puis <b>Commit changes</b>.</li>
+            <li>Cliquez sur un fichier dans la liste et copiez l’adresse de la page dans la barre du navigateur.</li>
+            <li>Collez-la ici. QR Magik la transforme en lien direct, puis touchez <b>Vérifier le fichier</b>.</li>
+          </ol>
+          <p class="hint">Fichiers de 20 Mo maximum, objets 3D de préférence sous 10 Mo. Si vous modifiez un fichier, déposez-le sous un nouveau nom : l’ancien lien peut rester en mémoire plusieurs heures. Les fichiers d’un dépôt public sont visibles par tous : n’y mettez ni photos d’élèves ni données personnelles.</p>
+        </details>
+      </div>
 
       <div class="row">
         <label for="f-lang">Langue de la voix
@@ -428,15 +448,23 @@ if("speechSynthesis" in window)speechSynthesis.onvoiceschanged=()=>{};
 
 /* ---------- générateur ---------- */
 let kind="texte";
-const help={"3d":"fichier .glb en ligne, par exemple déposé à côté de l’outil : modeles/toucan.glb",image:"lien direct vers une image (.jpg, .png) hébergée en ligne",audio:"lien direct vers un fichier son (.mp3, .m4a), par exemple un enregistrement en créole",video:"lien YouTube, PeerTube ou fichier .mp4",lien:"page web à ouvrir"};
+const help={"3d":"fichier .glb : lien GitHub de la page du fichier, ou lien direct",image:"lien direct vers une image (.jpg, .png) hébergée en ligne",audio:"lien direct vers un fichier son (.mp3, .m4a), par exemple un enregistrement en créole",video:"lien YouTube, PeerTube ou fichier .mp4",lien:"page web à ouvrir"};
 function setKind(k){
   kind=k;document.querySelectorAll(".types button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===k));
-  $("#lbl-url").hidden=k==="texte";$("#url-help").textContent=help[k]?"("+help[k]+")":"";
+  $("#lbl-url").hidden=k==="texte";$("#url-tools").hidden=k==="texte";$("#url-help").textContent=help[k]?"("+help[k]+")":"";
   $("#lbl-text").firstChild.textContent=(k==="texte")?"Texte ":"Texte d’accompagnement (facultatif) ";
   refresh();
 }
 document.querySelectorAll(".types button").forEach(b=>b.onclick=()=>setKind(b.dataset.k));
-function data(){return {t:$("#f-title").value.trim(),x:$("#f-text").value.trim(),k:kind,m:$("#f-url").value.trim(),l:$("#f-lang").value,r:$("#f-rate").value}}
+function directUrl(u){
+  u=(u||"").trim();
+  let m=u.match(/^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)\/(?:blob|raw)\/([^\/]+)\/(.+)$/);
+  if(m)return "https://cdn.jsdelivr.net/gh/"+m[1]+"/"+m[2]+"@"+m[3]+"/"+m[4].split(/[?#]/)[0];
+  m=u.match(/^https?:\/\/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/(?:refs\/heads\/)?([^\/]+)\/(.+)$/);
+  if(m)return "https://cdn.jsdelivr.net/gh/"+m[1]+"/"+m[2]+"@"+m[3]+"/"+m[4].split(/[?#]/)[0];
+  return u;
+}
+function data(){return {t:$("#f-title").value.trim(),x:$("#f-text").value.trim(),k:kind,m:directUrl($("#f-url").value),l:$("#f-lang").value,r:$("#f-rate").value}}
 function clean(d){const o={};for(const k in d)if(d[k]&&!(k==="k"&&d[k]==="texte")&&!(k==="r"&&d[k]==="0.9")&&!(k==="l"&&d[k]==="fr-FR"))o[k]=d[k];return o}
 async function linkFor(d){const p=await encode(clean(d));return (base()||"https://adresse-a-renseigner.invalid/")+"#r="+p}
 function qrImg(text,cell){
@@ -467,6 +495,24 @@ async function refresh(){
 }
 ["#f-title","#f-text","#f-url","#f-lang","#f-rate"].forEach(s=>$(s).addEventListener("input",refresh));
 $("#f-base").addEventListener("input",()=>{store.set("pa-base",$("#f-base").value.trim());refresh();renderSheet()});
+$("#f-url").addEventListener("change",()=>{const d=directUrl($("#f-url").value);if(d!==$("#f-url").value.trim()){$("#f-url").value=d;refresh()}$("#check-res").textContent="";});
+$("#check").onclick=async()=>{
+  const r=$("#check-res"),u=safeUrl(directUrl($("#f-url").value));r.className="checkres";
+  if(!u){r.textContent="Indiquez d’abord une adresse.";r.classList.add("ko");return}
+  r.textContent="Vérification…";
+  try{
+    const res=await fetch(u);
+    if(!res.ok)throw new Error("http"+res.status);
+    const b=new Uint8Array(await res.arrayBuffer()),mb=b.length/1048576;
+    const mo=" ("+(Math.round(mb*10)/10)+" Mo)";
+    if(kind==="3d"&&String.fromCharCode(...b.slice(0,4))!=="glTF")throw new Error("notglb");
+    if(mb>10){r.textContent="✓ Fichier accessible"+mo+", mais lourd : le chargement sera lent sur un réseau d’école.";r.classList.add("ok");return}
+    r.textContent="✓ Fichier accessible"+mo;r.classList.add("ok");
+  }catch(e){
+    r.classList.add("ko");
+    r.textContent=e.message==="notglb"?"✗ Ce fichier n’est pas un .glb. Exportez votre modèle au format GLB.":e.message&&e.message.startsWith("http")?"✗ Fichier introuvable. Vérifiez que le dépôt est Public et que l’adresse est complète.":"✗ Ce fichier ne peut pas être affiché depuis un autre site. Utilisez un dépôt GitHub public.";
+  }
+};
 $("#try").onclick=()=>renderReader(data(),true);
 $("#dl").onclick=()=>{const img=$("#qr img");if(!img)return;const a=document.createElement("a");a.href=img.src;a.download=(($("#f-title").value||"code").replace(/[^\w\- ]+/g,"").trim()||"code")+".png";a.click()};
 

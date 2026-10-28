@@ -24,6 +24,13 @@
 L'écran élève s'affiche dans la langue du contenu : français, anglais, espagnol, portugais, néerlandais.
 The student screen follows the content language. / A tela do aluno segue o idioma do conteúdo. / La pantalla del alumno sigue el idioma del contenido.
 
+## Vos propres fichiers / Your own files / Seus próprios arquivos / Sus propios archivos
+
+FR · Déposez vos objets 3D (.glb), images, sons et vidéos dans **votre propre dépôt GitHub public**, puis collez l'adresse du fichier dans QR Magik : le lien direct est créé automatiquement. Chacun gère ses fichiers, rien n'est stocké par QR Magik.
+EN · Upload your 3D objects (.glb), images, sounds and videos to **your own public GitHub repository**, then paste the file's address into QR Magik: the direct link is created automatically. Everyone manages their own files; QR Magik stores nothing.
+PT · Envie seus objetos 3D (.glb), imagens, sons e vídeos para **seu próprio repositório público no GitHub** e cole o endereço do arquivo no QR Magik: o link direto é criado automaticamente. Cada um gerencia seus arquivos; o QR Magik não armazena nada.
+ES · Suba sus objetos 3D (.glb), imágenes, sonidos y vídeos a **su propio repositorio público de GitHub** y pegue la dirección del archivo en QR Magik: el enlace directo se crea automáticamente. Cada uno gestiona sus archivos; QR Magik no almacena nada.
+
 ## Héberger sa propre copie / Host your own copy
 
 Fork → Settings → Pages → Branch `main` / `(root)` → Save.
